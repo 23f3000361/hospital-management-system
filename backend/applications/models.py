@@ -12,24 +12,67 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
-# Doctor Table, Patient Table, Appointment Table, Treatment Table, Department/Specialization Table
 db = SQLAlchemy()
 
 
-class Admin(db.Model):
-    admin_id = Column(Integer, primary_key=True)
-    username = Column(String(100), unique=True, nullable=False)
-    email = Column(String(120), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    role = Column(String(20), default="Admin")
+class User(db.Model):
+    __tablename__ = "user"
+
+    user_id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)  # Common
+    email = Column(String(120), unique=True, nullable=False)  # Common
+    password_hash = Column(String(255), nullable=False)  # Common
+    phone = Column(String(20))  # Common
+    gender = Column(String(10))  # Common
+    date_of_birth = Column(String(10))  # Common
+
+    # Patient-specific fields
+    address = Column(Text)  # Patient
+    emergency_contact = Column(String(20))  # Patient
+    blood_group = Column(String(5))  # Patient
+
+    # Doctor-specific fields
+    experience_years = Column(Integer)  # Doctor
+    qualification = Column(String(255))  # Doctor
+    status = Column(String(20), default="Active")  # Doctor
+
+    # Role field (decides whether this is Admin, Doctor, or Patient)
+    role = Column(Enum("Admin", "Doctor", "Patient", name="user_roles"), nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    # Relationships
+    doctor_department = relationship(
+        "Department", back_populates="head_doctor", uselist=False
+    )
+    doctor_appointments = relationship(
+        "Appointment",
+        back_populates="doctor",
+        foreign_keys="Appointment.doctor_id",
+        cascade="all, delete-orphan",
+    )
+    patient_appointments = relationship(
+        "Appointment",
+        back_populates="patient",
+        foreign_keys="Appointment.patient_id",
+        cascade="all, delete-orphan",
+    )
 
 
 class Department(db.Model):
+    __tablename__ = "department"
+
     department_id = Column(Integer, primary_key=True)
     department_name = Column(String(100), nullable=False, unique=True)
     description = Column(Text)
-    head_doctor_id = Column(Integer, ForeignKey("doctor.doctor_id"), nullable=True)
+    head_doctor_id = Column(Integer, ForeignKey("user.user_id"), nullable=True)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -39,79 +82,15 @@ class Department(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    doctors = db.relationship(
-        "Doctor",
-        back_populates="department",
-        cascade="all, delete-orphan",
-        foreign_keys="[Doctor.department_id]",
-    )
-
-    head_doctor = db.relationship(
-        "Doctor", foreign_keys=[head_doctor_id], uselist=False, post_update=True
-    )
-
-
-class Doctor(db.Model):
-    doctor_id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(120), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    phone = Column(String(20))
-    gender = Column(String(10))
-    date_of_birth = Column(Date)
-    department_id = Column(
-        Integer, ForeignKey("department.department_id"), nullable=False
-    )
-    experience_years = Column(Integer)
-    qualification = Column(String(255))
-    status = Column(String(20), default="Active")
-    created_at = Column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-
-    department = db.relationship(
-        "Department", back_populates="doctors", foreign_keys=[department_id]
-    )
-
-    appointments = db.relationship(
-        "Appointment", back_populates="doctor", cascade="all, delete-orphan"
-    )
-
-
-class Patient(db.Model):
-    patient_id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(120), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    phone = Column(String(20))
-    gender = Column(String(10))
-    date_of_birth = Column(Date)
-    address = Column(Text)
-    emergency_contact = Column(String(20))
-    blood_group = Column(String(5))
-    created_at = Column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-
-    appointments = db.relationship(
-        "Appointment", back_populates="patient", cascade="all, delete-orphan"
-    )
+    head_doctor = relationship("User", back_populates="doctor_department")
 
 
 class Appointment(db.Model):
+    __tablename__ = "appointment"
+
     appointment_id = Column(Integer, primary_key=True)
-    patient_id = Column(Integer, ForeignKey("patient.patient_id"), nullable=False)
-    doctor_id = Column(Integer, ForeignKey("doctor.doctor_id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("user.user_id"), nullable=False)
+    doctor_id = Column(Integer, ForeignKey("user.user_id"), nullable=False)
     date = Column(Date, nullable=False)
     time = Column(String(20), nullable=False)
     status = Column(
@@ -130,9 +109,14 @@ class Appointment(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    patient = db.relationship("Patient", back_populates="appointments")
-    doctor = db.relationship("Doctor", back_populates="appointments")
-    treatment = db.relationship(
+    # Links back to User with role checks handled in app logic
+    patient = relationship(
+        "User", back_populates="patient_appointments", foreign_keys=[patient_id]
+    )
+    doctor = relationship(
+        "User", back_populates="doctor_appointments", foreign_keys=[doctor_id]
+    )
+    treatment = relationship(
         "Treatment",
         back_populates="appointment",
         uselist=False,
@@ -141,6 +125,8 @@ class Appointment(db.Model):
 
 
 class Treatment(db.Model):
+    __tablename__ = "treatment"
+
     treatment_id = Column(Integer, primary_key=True)
     appointment_id = Column(
         Integer, ForeignKey("appointment.appointment_id"), nullable=False
@@ -158,4 +144,4 @@ class Treatment(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    appointment = db.relationship("Appointment", back_populates="treatment")
+    appointment = relationship("Appointment", back_populates="treatment")
