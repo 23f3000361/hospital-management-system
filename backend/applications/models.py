@@ -1,4 +1,3 @@
-from click import DateTime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import (
     Integer,
@@ -6,21 +5,31 @@ from sqlalchemy import (
     Column,
     Text,
     Date,
-    relationship,
     ForeignKey,
     Enum,
+    DateTime,
 )
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
 # Doctor Table, Patient Table, Appointment Table, Treatment Table, Department/Specialization Table
 db = SQLAlchemy()
 
 
+class Admin(db.Model):
+    admin_id = Column(Integer, primary_key=True)
+    username = Column(String(100), unique=True, nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    role = Column(String(20), default="Admin")
+
+
 class Department(db.Model):
     department_id = Column(Integer, primary_key=True)
     department_name = Column(String(100), nullable=False, unique=True)
     description = Column(Text)
-    head_doctor_id = Column(Integer, ForeignKey("doctor.doctor_id"), nullable=False)
+    head_doctor_id = Column(Integer, ForeignKey("doctor.doctor_id"), nullable=True)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -31,7 +40,14 @@ class Department(db.Model):
     )
 
     doctors = db.relationship(
-        "Doctor", back_populates="department", cascade="all, delete-orphan"
+        "Doctor",
+        back_populates="department",
+        cascade="all, delete-orphan",
+        foreign_keys="[Doctor.department_id]",
+    )
+
+    head_doctor = db.relationship(
+        "Doctor", foreign_keys=[head_doctor_id], uselist=False, post_update=True
     )
 
 
@@ -58,7 +74,10 @@ class Doctor(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    department = db.relationship("Department", back_populates="doctors")
+    department = db.relationship(
+        "Department", back_populates="doctors", foreign_keys=[department_id]
+    )
+
     appointments = db.relationship(
         "Appointment", back_populates="doctor", cascade="all, delete-orphan"
     )
