@@ -4,14 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Add models pt. 2">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/data_source_mapping.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/prettier.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/applications/api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
+    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Add bg work">
+      <change afterPath="$PROJECT_DIR$/backend/applications/admin_api.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/applications/auth_api.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/applications/doctor_api.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/applications/patient_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/applications/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +135,11 @@
       <workItem from="1758613024105" duration="3717000" />
       <workItem from="1758800405039" duration="6990000" />
       <workItem from="1758811703322" duration="1430000" />
-      <workItem from="1758814408983" duration="7406000" />
+      <workItem from="1758814408983" duration="8108000" />
+      <workItem from="1758880576400" duration="5329000" />
+      <workItem from="1758956006839" duration="8866000" />
+      <workItem from="1758970548112" duration="4262000" />
+      <workItem from="1758974879060" duration="14253000" />
     </task>
     <task id="LOCAL-00001" summary="Intial Commit">
       <option name="closed" value="true" />
@@ -224,7 +229,39 @@
       <option name="project" value="LOCAL" />
       <updated>1758814607507</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Add models pt. 3">
+      <option name="closed" value="true" />
+      <created>1758824945323</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1758824945323</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Add API">
+      <option name="closed" value="true" />
+      <created>1758824970671</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1758824970672</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Update main">
+      <option name="closed" value="true" />
+      <created>1758825418542</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1758825418542</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Add bg work">
+      <option name="closed" value="true" />
+      <created>1758825442126</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1758825442126</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -252,6 +289,10 @@
     <MESSAGE value="Commit 6" />
     <MESSAGE value="Add models" />
     <MESSAGE value="Add models pt. 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add models pt. 2" />
+    <MESSAGE value="Add models pt. 3" />
+    <MESSAGE value="Add API" />
+    <MESSAGE value="Update main" />
+    <MESSAGE value="Add bg work" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add bg work" />
   </component>
 </project>
