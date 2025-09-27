@@ -19,26 +19,19 @@ class User(db.Model):
     __tablename__ = "user"
 
     user_id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)  # Common
-    email = Column(String(120), unique=True, nullable=False)  # Common
-    password_hash = Column(String(255), nullable=False)  # Common
-    phone = Column(String(20))  # Common
-    gender = Column(String(10))  # Common
-    date_of_birth = Column(String(10))  # Common
-
-    # Patient-specific fields
-    address = Column(Text)  # Patient
-    emergency_contact = Column(String(20))  # Patient
-    blood_group = Column(String(5))  # Patient
-
-    # Doctor-specific fields
-    experience_years = Column(Integer)  # Doctor
-    qualification = Column(String(255))  # Doctor
-    status = Column(String(20), default="Active")  # Doctor
-
-    # Role field (decides whether this is Admin, Doctor, or Patient)
+    name = Column(String(100), nullable=False)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(20), nullable=False)
+    phone = Column(String(10))
+    gender = Column(String(10))
+    date_of_birth = Column(String(10))
+    address = Column(Text)
+    emergency_contact = Column(String(20))
+    blood_group = Column(String(3))
+    experience_years = Column(Integer)
+    qualification = Column(String(255))
+    status = Column(String(20), default="Active")
     role = Column(Enum("Admin", "Doctor", "Patient", name="user_roles"), nullable=False)
-
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -48,10 +41,20 @@ class User(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    # Relationships
     doctor_department = relationship(
-        "Department", back_populates="head_doctor", uselist=False
+        "Department",
+        back_populates="head_doctor",
+        uselist=False,
+        foreign_keys="[Department.head_doctor_id]",
     )
+
+    department_id = Column(
+        Integer, ForeignKey("department.department_id"), nullable=True
+    )
+    department = relationship(
+        "Department", back_populates="doctors", foreign_keys=[department_id]
+    )
+
     doctor_appointments = relationship(
         "Appointment",
         back_populates="doctor",
@@ -82,7 +85,12 @@ class Department(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    head_doctor = relationship("User", back_populates="doctor_department")
+    head_doctor = relationship(
+        "User", back_populates="doctor_department", foreign_keys=[head_doctor_id]
+    )
+    doctors = relationship(
+        "User", back_populates="department", foreign_keys="[User.department_id]"
+    )
 
 
 class Appointment(db.Model):
@@ -109,7 +117,6 @@ class Appointment(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    # Links back to User with role checks handled in app logic
     patient = relationship(
         "User", back_populates="patient_appointments", foreign_keys=[patient_id]
     )
