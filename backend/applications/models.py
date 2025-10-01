@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Enum,
     DateTime,
+    Float,
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -116,6 +117,10 @@ class Appointment(db.Model):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+    payment_status = Column(
+        Enum("Paid", "Unpaid", "Pending", name="payment_status"), default="Unpaid"
+    )
+    fee_amount = Column(Float, nullable=True)
 
     patient = relationship(
         "User", back_populates="patient_appointments", foreign_keys=[patient_id]
