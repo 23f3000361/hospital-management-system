@@ -22,7 +22,7 @@ class LoginAPI(Resource):
         email = data.get("email")
         password = data.get("password")
         if not email or not password:
-            return {"message": "Email and password are required"}, 400
+            return {"message": "Both email and password are required"}, 400
 
         user = User.query.filter_by(email=email).first()
 

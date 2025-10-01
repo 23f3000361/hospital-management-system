@@ -10,6 +10,7 @@ from flask_jwt_extended import (
     get_jwt,
 )
 from datetime import datetime, date
+from .api import cache
 
 ALLOWED_REGISTRATION_ROLES = ["Doctor", "Patient"]
 ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
@@ -315,6 +316,7 @@ class AdminViewPatientHistoryAPI(Resource):
 
 class PatientListAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Admin":
@@ -337,6 +339,7 @@ class PatientListAPI(Resource):
 
 class UpcomingAppointmentsAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Admin":
@@ -366,3 +369,36 @@ class UpcomingAppointmentsAPI(Resource):
             for appt in appointments
         ]
         return {"upcoming_appointments": result}, 200
+
+
+class AdminFeeReportAPI(Resource):
+    @jwt_required()
+    @cache.cached(timeout=120)
+    def get(self):
+        claims = get_jwt()
+        if claims.get("role") != "Admin":
+            return {"message": "Only admins can view financial reports"}, 403
+        appointments = db.session.query(
+            Appointment.payment_status, Appointment.fee_amount
+        ).all()
+        total_collected = 0.0
+        total_outstanding = 0.0
+        fees_by_status = {"Paid": 0.0, "Unpaid": 0.0, "Pending": 0.0}
+        for status, amount in appointments:
+            if amount:
+                if status == "Paid":
+                    total_collected += amount
+                    fees_by_status["Paid"] += amount
+                elif status == "Unpaid":
+                    total_outstanding += amount
+                    fees_by_status["Unpaid"] += amount
+                elif status == "Pending":
+                    fees_by_status["Pending"] += amount
+        return {
+            "message": "Fee report generated successfully",
+            "summary": {
+                "total_collected_fees": total_collected,
+                "total_outstanding_fees": total_outstanding,
+                "fees_by_status": fees_by_status,
+            },
+        }, 200

@@ -1,4 +1,4 @@
-from flask import request, send_file
+from flask import request, send_file, jsonify
 from flask_restful import Resource
 from .models import db, User, Appointment, Department
 from sqlalchemy.orm import joinedload
@@ -10,6 +10,8 @@ from flask_jwt_extended import (
 from datetime import datetime, date
 import io
 import csv
+from .api import cache
+from .task import export_patient_history_csv
 
 ALLOWED_REGISTRATION_ROLES = ["Doctor", "Patient"]
 ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
@@ -17,6 +19,7 @@ ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
 
 class PatientProfileAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
@@ -70,6 +73,7 @@ class PatientProfileAPI(Resource):
 
 class PatientAppointmentsAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
@@ -134,6 +138,7 @@ class PatientAppointmentsAPI(Resource):
 
 class DepartmentListAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") not in ["Admin", "Patient"]:  # Both can view departments
@@ -267,6 +272,7 @@ class PatientBookAppointmentAPI(
 
 class PatientHistoryExportCSVAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
@@ -330,6 +336,7 @@ class PatientHistoryExportCSVAPI(Resource):
 
 class DoctorListAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") not in ["Admin", "Patient"]:
@@ -348,3 +355,41 @@ class DoctorListAPI(Resource):
             for d in doctors
         ]
         return {"doctors": result}, 200
+
+
+class PaymentAPI(Resource):
+    @jwt_required()
+    def post(self, appointment_id):
+        claims = get_jwt()
+        if claims.get("role") != "Patient":
+            return {"message": "Only patients can make payments"}, 403
+        patient_id = get_jwt_identity()
+        appointment = Appointment.query.filter_by(
+            appointment_id=appointment_id, patient_id=patient_id
+        ).first()
+        if not appointment:
+            return {"message": "Appointment not found"}, 404
+        appointment.payment_status = "Paid"
+        db.session.commit()
+        return {"message": f"Payment for appointment {appointment_id} successful."}, 200
+
+
+class ExportPatientHistoryAPI(Resource):
+    @jwt_required()
+    def post(self):
+        claims = get_jwt()
+        if claims.get("role") != "Patient":
+            return jsonify({"message": "Only patients can export their history"}), 403
+
+        patient_id = get_jwt_identity()
+
+        export_patient_history_csv.delay(patient_id)
+
+        return (
+            jsonify(
+                {
+                    "message": "CSV export has been started. You will be notified when it's complete."
+                }
+            ),
+            202,
+        )

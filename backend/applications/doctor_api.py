@@ -7,6 +7,7 @@ from flask_jwt_extended import (
     jwt_required,
     get_jwt,
 )
+from .api import cache
 from datetime import datetime, date
 
 ALLOWED_REGISTRATION_ROLES = ["Doctor", "Patient"]
@@ -15,6 +16,7 @@ ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
 
 class DoctorAppointmentsAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Doctor":
@@ -141,6 +143,7 @@ class DoctorViewPatientHistoryAPI(Resource):
 
 class AssignedPatientsAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Doctor":
@@ -170,6 +173,7 @@ class AssignedPatientsAPI(Resource):
 
 class DoctorAvailabilityAPI(Resource):
     @jwt_required()
+    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Doctor":
