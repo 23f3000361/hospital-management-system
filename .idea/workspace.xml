@@ -4,14 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Add bg work">
-      <change afterPath="$PROJECT_DIR$/backend/applications/admin_api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/applications/auth_api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/applications/doctor_api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/applications/patient_api.py" afterDir="false" />
+    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Update bg work">
+      <change afterPath="$PROJECT_DIR$/backend/applications/task.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/applications/worker.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/applications/admin_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/admin_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/applications/auth_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/auth_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/applications/doctor_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/doctor_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/applications/patient_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/patient_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -66,36 +68,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/IITM/Projects/MAD2/HMS&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_interpreter_path&quot;: &quot;wsl://Ubuntu-24.04@/usr/bin/node&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;rearrange.code.on.save&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.app.executor": "Run",
+    "Python.main.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "D:/IITM/Projects/MAD2/HMS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_interpreter_path": "wsl://Ubuntu-24.04@/usr/bin/node",
+    "nodejs_package_manager_path": "npm",
+    "rearrange.code.on.save": "true",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\IITM\Projects\MAD2\HMS\backend\applications" />
@@ -139,7 +141,21 @@
       <workItem from="1758880576400" duration="5329000" />
       <workItem from="1758956006839" duration="8866000" />
       <workItem from="1758970548112" duration="4262000" />
-      <workItem from="1758974879060" duration="14253000" />
+      <workItem from="1758974879060" duration="15052000" />
+      <workItem from="1759003714085" duration="593000" />
+      <workItem from="1759038579500" duration="624000" />
+      <workItem from="1759041593263" duration="2313000" />
+      <workItem from="1759044856912" duration="10017000" />
+      <workItem from="1759059771922" duration="2645000" />
+      <workItem from="1759159229807" duration="989000" />
+      <workItem from="1759207503534" duration="997000" />
+      <workItem from="1759312661306" duration="952000" />
+      <workItem from="1759315182223" duration="1392000" />
+      <workItem from="1759317747345" duration="849000" />
+      <workItem from="1759318679942" duration="634000" />
+      <workItem from="1759319372165" duration="32000" />
+      <workItem from="1759319422525" duration="178000" />
+      <workItem from="1759319692166" duration="4338000" />
     </task>
     <task id="LOCAL-00001" summary="Intial Commit">
       <option name="closed" value="true" />
@@ -261,7 +277,39 @@
       <option name="project" value="LOCAL" />
       <updated>1758825442126</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Add APIs pt. 2">
+      <option name="closed" value="true" />
+      <created>1759001778203</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1759001778203</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Update main">
+      <option name="closed" value="true" />
+      <created>1759001796833</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1759001796833</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Update models">
+      <option name="closed" value="true" />
+      <created>1759001813772</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1759001813772</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Update bg work">
+      <option name="closed" value="true" />
+      <created>1759001827580</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1759001827580</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -291,8 +339,11 @@
     <MESSAGE value="Add models pt. 2" />
     <MESSAGE value="Add models pt. 3" />
     <MESSAGE value="Add API" />
-    <MESSAGE value="Update main" />
     <MESSAGE value="Add bg work" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add bg work" />
+    <MESSAGE value="Add APIs pt. 2" />
+    <MESSAGE value="Update main" />
+    <MESSAGE value="Update models" />
+    <MESSAGE value="Update bg work" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update bg work" />
   </component>
 </project>
