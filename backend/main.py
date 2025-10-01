@@ -1,7 +1,9 @@
-from flask import Flask, request
+from time import timezone
+
+from flask import Flask
 from flask_restful import Api
-from applications.models import db, User
-from applications.api import WelcomeAPI
+from applications.models import db
+from applications.api import WelcomeAPI, cache
 from applications.auth_api import LoginAPI, SignUpAPI
 from applications.admin_api import (
     CreateDepartmentAPI,
@@ -16,6 +18,7 @@ from applications.admin_api import (
     AdminViewPatientHistoryAPI,
     PatientListAPI,
     UpcomingAppointmentsAPI,
+    AdminFeeReportAPI,
 )
 from applications.doctor_api import (
     DoctorAppointmentsAPI,
@@ -33,10 +36,15 @@ from applications.patient_api import (
     PatientHistoryExportCSVAPI,
     DepartmentDoctorsAPI,
     PatientBookAppointmentAPI,
+    PaymentAPI,
+    ExportPatientHistoryAPI,
 )
+from applications.worker import celery
 from flask_jwt_extended import JWTManager
 import os
 from datetime import timedelta
+import time
+from applications.task import *
 
 base_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -48,10 +56,33 @@ app.config["SECRET_KEY"] = "very-secret"
 app.config["JWT_SECRET_KEY"] = "very-very-secret"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=12)
 
+app.config["CACHE_TYPE"] = "redis"
+app.config["CACHE_REDIS_HOST"] = "localhost"
+app.config["CACHE_REDIS_PORT"] = 6379
+app.config["CACHE_REDIS_DB"] = 0
+app.config["CACHE_REDIS_URL"] = "redis://localhost:6379"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+
+celery.conf.update(
+    broker_url="redis://localhost:6379/0",
+    result_backend="redis://localhost:6379/1",
+    timezone="Asia/Kolkata",
+)
+
 db.init_app(app)
+# celery.init_app(app)
+cache.init_app(app)
 api = Api(app)
-app.app_context().push()
 jwt = JWTManager(app)
+
+app.app_context().push()
+
+
+@app.route("/test_cache")
+@cache.cached(timeout=10)
+def test_cache():
+    time.sleep(10)
+    return "Cache test is working fine."
 
 
 def add_admin():
@@ -113,11 +144,14 @@ api.add_resource(DepartmentDoctorsAPI, "/api/departments/<int:department_id>/doc
 api.add_resource(DoctorProfilePatientViewAPI, "/api/doctors/<int:doctor_id>")
 api.add_resource(PatientBookAppointmentAPI, "/api/patient/book_appointment")
 api.add_resource(PatientHistoryExportCSVAPI, "/api/patient/history/export_csv")
+api.add_resource(PaymentAPI, "/api/patient/pay/<int:appointment_id>")
+api.add_resource(AdminFeeReportAPI, "/api/admin/reports/fees")
+api.add_resource(ExportPatientHistoryAPI, "/api/patient/history/export")
 
 
 @app.route("/")
 def home():
-    return "Hello World!"
+    return "Hello, Flask! Your server is working."
 
 
 if __name__ == "__main__":
