@@ -56,12 +56,13 @@ app.config["SECRET_KEY"] = "very-secret"
 app.config["JWT_SECRET_KEY"] = "very-very-secret"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=12)
 
-app.config["CACHE_TYPE"] = "redis"
+app.config["CACHE_TYPE"] = "simple"
 app.config["CACHE_REDIS_HOST"] = "localhost"
 app.config["CACHE_REDIS_PORT"] = 6379
 app.config["CACHE_REDIS_DB"] = 0
 app.config["CACHE_REDIS_URL"] = "redis://localhost:6379"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+app.config['JWT_DECODE_LEEWAY'] = 10
 
 celery.conf.update(
     broker_url="redis://localhost:6379/0",
