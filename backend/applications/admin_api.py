@@ -16,6 +16,18 @@ ALLOWED_REGISTRATION_ROLES = ["Doctor", "Patient"]
 ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
 
 
+from flask import request
+from flask_restful import Resource
+from .models import db, User, Appointment, Department
+from sqlalchemy.orm import joinedload
+from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
+from datetime import datetime, date
+from .api import cache
+
+ALLOWED_REGISTRATION_ROLES = ["Doctor", "Patient"]
+ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
+
+
 class CreateDepartmentAPI(Resource):
     @jwt_required()
     def post(self):
@@ -28,26 +40,16 @@ class CreateDepartmentAPI(Resource):
         description = data.get("description", "")
         head_doctor_id = data.get("head_doctor_id")
 
-        if (
-            not department_name
-            or len(department_name.strip()) < 3
-            or len(department_name.strip()) > 100
-        ):
-            return {
-                "message": "Department name must be between 3 and 100 characters long"
-            }, 400
+        if not department_name or not 3 <= len(department_name.strip()) <= 100:
+            return {"message": "Department name must be between 3 and 100 characters long"}, 400
 
-        existing_dept = Department.query.filter_by(
-            department_name=department_name.strip()
-        ).first()
+        existing_dept = Department.query.filter_by(department_name=department_name.strip()).first()
         if existing_dept:
             return {"message": f"Department '{department_name}' already exists"}, 400
 
         head_doctor = None
         if head_doctor_id:
-            head_doctor = User.query.filter_by(
-                user_id=head_doctor_id, role="Doctor"
-            ).first()
+            head_doctor = User.query.filter_by(user_id=head_doctor_id, role="Doctor").first()
             if not head_doctor:
                 return {"message": f"No doctor found with id {head_doctor_id}"}, 400
 
@@ -56,7 +58,6 @@ class CreateDepartmentAPI(Resource):
             description=description.strip(),
             head_doctor_id=head_doctor.user_id if head_doctor else None,
         )
-
         db.session.add(new_department)
         db.session.commit()
 
@@ -64,6 +65,7 @@ class CreateDepartmentAPI(Resource):
         if head_doctor:
             msg += f" Head doctor assigned: {head_doctor.name}"
 
+        # Note: Creating a department doesn't directly affect the main doctor list cache, so no invalidation is strictly needed here.
         return {"message": msg}, 201
 
 
@@ -92,9 +94,9 @@ class AssignDoctorDepartmentAPI(Resource):
         doctor.department_id = department.department_id
         db.session.commit()
 
-        return {
-            "message": f"Doctor {doctor.name} has been assigned to department {department.department_name}"
-        }, 201
+        # Invalidate the doctor list cache since a doctor's department has changed
+        cache.delete('view//api/doctors')
+        return {"message": f"Doctor {doctor.name} has been assigned to department {department.department_name}"}, 200
 
 
 class AddDoctorAPI(Resource):
@@ -105,44 +107,42 @@ class AddDoctorAPI(Resource):
             return {"message": "Only admins can add new doctors"}, 403
 
         data = request.json
-        name = data.get("name")
-        email = data.get("email")
-        password = data.get("password")
-        phone = data.get("phone")
-        gender = data.get("gender")
-        date_of_birth = data.get("date_of_birth")
-        address = data.get("address")
-        qualification = data.get("qualification")
-        experience_years = data.get("experience_years")
+        # Check for required fields
+        required = ["name", "email", "password", "qualification", "experience_years"]
+        if not all(field in data and data[field] is not None for field in required):
+            return {"message": "Name, email, password, qualification, and experience years are required"}, 400
 
-        if not all([name, email, password, qualification, experience_years]):
-            return {
-                "message": "Name, email, password, qualification, and experience years are required"
-            }, 400
+        # Check for existing user
+        if User.query.filter_by(email=data.get("email")).first():
+            return {"message": f"User with email {data.get('email')} already exists"}, 409
 
-        user = User.query.filter_by(email=email).first()
-        if user:
-            return {"message": f"User with email {email} already exists"}, 400
+        # --- MODIFIED: Robust Date of Birth Parsing ---
+        dob_parsed = None
+        dob_raw = data.get("date_of_birth")
+        if dob_raw: # Only attempt to parse if the date is provided
+            try:
+                dob_parsed = datetime.strptime(str(dob_raw).strip(), '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return {"message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."}, 400
 
         new_doctor = User(
-            name=name,
-            email=email,
-            password=password,
+            name=data.get("name"),
+            email=data.get("email"),
+            password=data.get("password"),
             role="Doctor",
-            phone=phone,
-            gender=gender,
-            date_of_birth=date_of_birth,
-            address=address,
-            qualification=qualification,
-            experience_years=experience_years,
+            phone=data.get("phone"),
+            gender=data.get("gender"),
+            date_of_birth=dob_parsed,
+            address=data.get("address"),
+            qualification=data.get("qualification"),
+            experience_years=data.get("experience_years"),
         )
         db.session.add(new_doctor)
         db.session.commit()
 
-        return {
-            "message": f"Doctor {new_doctor.name} added successfully.",
-            "doctor_id": new_doctor.user_id,
-        }, 201
+        # Invalidate the doctor list cache
+        cache.delete('view//api/doctors')
+        return {"message": f"Doctor {new_doctor.name} added successfully.", "doctor_id": new_doctor.user_id}, 201
 
 
 class EditDoctorAPI(Resource):
@@ -152,17 +152,31 @@ class EditDoctorAPI(Resource):
         if claims.get("role") != "Admin":
             return {"message": "Only admins can edit doctor information"}, 403
 
-        data = request.json
         doctor = User.query.filter_by(user_id=doctor_id, role="Doctor").first()
-
         if not doctor:
             return {"message": "Doctor not found"}, 404
 
+        data = request.json
+
+        # --- MODIFIED: Handle date separately to prevent errors ---
+        if 'date_of_birth' in data:
+            dob_raw = data.get('date_of_birth')
+            if dob_raw:
+                try:
+                    doctor.date_of_birth = datetime.strptime(str(dob_raw).strip(), '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    return {"message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."}, 400
+            else:
+                doctor.date_of_birth = None # Allow clearing the date
+
+        # Update other allowed fields
         for key, value in data.items():
-            if hasattr(doctor, key):
+            if hasattr(doctor, key) and key not in ['date_of_birth', 'email', 'role']: # Don't update date here or critical fields
                 setattr(doctor, key, value)
 
+        # --- MODIFIED: Commit to DB before clearing cache ---
         db.session.commit()
+        cache.delete('view//api/doctors')
         return {"message": f"Doctor {doctor.name}'s details updated successfully."}, 200
 
 
@@ -174,15 +188,14 @@ class DeleteDoctorAPI(Resource):
             return {"message": "Only admins can delete doctors"}, 403
 
         doctor = User.query.filter_by(user_id=doctor_id, role="Doctor").first()
-
         if not doctor:
             return {"message": "Doctor not found"}, 404
 
         db.session.delete(doctor)
         db.session.commit()
-        return {
-            "message": f"Doctor {doctor.name} and all associated data deleted successfully."
-        }, 200
+
+        cache.delete('view//api/doctors')
+        return {"message": f"Doctor {doctor.name} and all associated data deleted successfully."}, 200
 
 
 class BlacklistDoctorAPI(Resource):
@@ -193,7 +206,6 @@ class BlacklistDoctorAPI(Resource):
             return {"message": "Only admins can blacklist doctors"}, 403
 
         doctor = User.query.filter_by(user_id=doctor_id, role="Doctor").first()
-
         if not doctor:
             return {"message": "Doctor not found"}, 404
 
@@ -202,9 +214,9 @@ class BlacklistDoctorAPI(Resource):
 
         doctor.status = "Inactive"
         db.session.commit()
-        return {
-            "message": f"Doctor {doctor.name} has been blacklisted successfully."
-        }, 200
+
+        cache.delete('view//api/doctors')
+        return {"message": f"Doctor {doctor.name} has been blacklisted successfully."}, 200
 
 
 class EditPatientAPI(Resource):
@@ -214,20 +226,30 @@ class EditPatientAPI(Resource):
         if claims.get("role") != "Admin":
             return {"message": "Only admins can edit patient information"}, 403
 
-        data = request.json
         patient = User.query.filter_by(user_id=patient_id, role="Patient").first()
-
         if not patient:
             return {"message": "Patient not found"}, 404
 
+        data = request.json
+
+        # --- MODIFIED: Handle date separately to prevent errors ---
+        if 'date_of_birth' in data:
+            dob_raw = data.get('date_of_birth')
+            if dob_raw:
+                try:
+                    patient.date_of_birth = datetime.strptime(str(dob_raw).strip(), '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    return {"message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."}, 400
+            else:
+                patient.date_of_birth = None # Allow clearing the date
+
         for key, value in data.items():
-            if hasattr(patient, key):
+            if hasattr(patient, key) and key not in ['date_of_birth', 'email', 'role']:
                 setattr(patient, key, value)
 
         db.session.commit()
-        return {
-            "message": f"Patient {patient.name}'s details updated successfully."
-        }, 200
+        cache.delete('view//api/admin/patients')
+        return {"message": f"Patient {patient.name}'s details updated successfully."}, 200
 
 
 class DeletePatientAPI(Resource):
@@ -238,15 +260,15 @@ class DeletePatientAPI(Resource):
             return {"message": "Only admins can delete patients"}, 403
 
         patient = User.query.filter_by(user_id=patient_id, role="Patient").first()
-
         if not patient:
             return {"message": "Patient not found"}, 404
 
         db.session.delete(patient)
         db.session.commit()
-        return {
-            "message": f"Patient {patient.name} and all associated data deleted successfully."
-        }, 200
+
+        # --- ADDED: Missing cache invalidation ---
+        cache.delete('view//api/admin/patients')
+        return {"message": f"Patient {patient.name} and all associated data deleted successfully."}, 200
 
 
 class BlacklistPatientAPI(Resource):
@@ -257,7 +279,6 @@ class BlacklistPatientAPI(Resource):
             return {"message": "Only admins can blacklist patients"}, 403
 
         patient = User.query.filter_by(user_id=patient_id, role="Patient").first()
-
         if not patient:
             return {"message": "Patient not found"}, 404
 
@@ -266,9 +287,10 @@ class BlacklistPatientAPI(Resource):
 
         patient.status = "Inactive"
         db.session.commit()
-        return {
-            "message": f"Patient {patient.name} has been blacklisted successfully."
-        }, 200
+
+        # --- ADDED: Missing cache invalidation ---
+        cache.delete('view//api/admin/patients')
+        return {"message": f"Patient {patient.name} has been blacklisted successfully."}, 200
 
 
 class AdminViewPatientHistoryAPI(Resource):
