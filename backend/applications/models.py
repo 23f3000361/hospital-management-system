@@ -9,6 +9,8 @@ from sqlalchemy import (
     Enum,
     DateTime,
     Float,
+    Boolean,
+    UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -25,7 +27,7 @@ class User(db.Model):
     password = Column(String(20), nullable=False)
     phone = Column(String(10))
     gender = Column(String(10))
-    date_of_birth = Column(String(10))
+    date_of_birth = Column(Date)
     address = Column(Text)
     emergency_contact = Column(String(20))
     blood_group = Column(String(3))
@@ -157,3 +159,15 @@ class Treatment(db.Model):
     )
 
     appointment = relationship("Appointment", back_populates="treatment")
+
+
+class DoctorAvailability(db.Model):
+    __tablename__ = 'doctor_availability'
+
+    id = Column(Integer, primary_key=True)
+    doctor_id = Column(Integer, ForeignKey('user.user_id'), nullable=False)
+    date = Column(Date, nullable=False)
+    available_morning = Column(Boolean, default=True) # 08:00 - 12:00
+    available_evening = Column(Boolean, default=True) # 16:00 - 21:00
+
+    __table_args__ = (UniqueConstraint('doctor_id', 'date', name='_doctor_date_uc'),)
