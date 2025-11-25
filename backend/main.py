@@ -26,6 +26,7 @@ from applications.doctor_api import (
     DoctorViewPatientHistoryAPI,
     AssignedPatientsAPI,
     DoctorAvailabilityAPI,
+    DoctorProfileAPI,
 )
 from applications.patient_api import (
     DoctorListAPI,
@@ -38,6 +39,7 @@ from applications.patient_api import (
     PatientBookAppointmentAPI,
     PaymentAPI,
     ExportPatientHistoryAPI,
+    PatientViewDoctorAvailabilityAPI,
 )
 from applications.worker import celery
 from flask_jwt_extended import JWTManager
@@ -128,6 +130,7 @@ api.add_resource(
     "/api/doctor/appointments",
     "/api/doctor/appointments/<int:appointment_id>",
 )
+api.add_resource(DoctorProfileAPI, "/api/doctor/profile")
 api.add_resource(CompleteAppointmentAPI, "/api/doctor/complete_appointment")
 api.add_resource(
     DoctorViewPatientHistoryAPI, "/api/doctor/patient_history/<int:patient_id>"
@@ -148,6 +151,7 @@ api.add_resource(PatientHistoryExportCSVAPI, "/api/patient/history/export_csv")
 api.add_resource(PaymentAPI, "/api/patient/pay/<int:appointment_id>")
 api.add_resource(AdminFeeReportAPI, "/api/admin/reports/fees")
 api.add_resource(ExportPatientHistoryAPI, "/api/patient/history/export")
+api.add_resource(PatientViewDoctorAvailabilityAPI, "/api/patient/doctor_availability/<int:doctor_id>")
 
 
 @app.route("/")
