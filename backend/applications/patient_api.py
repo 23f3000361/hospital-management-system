@@ -1,13 +1,13 @@
 from flask import request, send_file, jsonify
 from flask_restful import Resource
-from .models import db, User, Appointment, Department
+from .models import db, User, Appointment, Department, DoctorAvailability
 from sqlalchemy.orm import joinedload
 from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
     get_jwt,
 )
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import io
 import csv
 from .api import cache
@@ -37,7 +37,7 @@ class PatientProfileAPI(Resource):
             "email": patient.email,
             "phone": patient.phone,
             "gender": patient.gender,
-            "date_of_birth": patient.date_of_birth,
+            "date_of_birth": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
             "address": patient.address,
             "emergency_contact": patient.emergency_contact,
             "blood_group": patient.blood_group,
@@ -58,6 +58,18 @@ class PatientProfileAPI(Resource):
             return {"message": "Patient not found"}, 404
 
         data = request.json
+
+        if 'date_of_birth' in data:
+            dob_value = data['date_of_birth']
+            if dob_value:
+                try:
+                    patient.date_of_birth = datetime.strptime(str(dob_value).strip(), '%Y-%m-%d').date()
+                except ValueError:
+                    return {"message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."}, 400
+            else:
+                patient.date_of_birth = None
+            del data['date_of_birth']
+
         for key, value in data.items():
             if hasattr(patient, key) and key not in [
                 "user_id",
@@ -351,10 +363,65 @@ class DoctorListAPI(Resource):
                 "phone": d.phone,
                 "department": d.department.department_name if d.department else "N/A",
                 "status": d.status,
+                "qualification":d.qualification,
             }
             for d in doctors
         ]
         return {"doctors": result}, 200
+
+class PatientViewDoctorAvailabilityAPI(Resource):
+    @jwt_required()
+    def get(self, doctor_id):
+        claims = get_jwt()
+        if claims.get("role") != "Patient":
+            return {"message": "Access denied"}, 403
+
+        today = date.today()
+        availability_list = []
+
+        existing_bookings = Appointment.query.filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.date >= today,
+            Appointment.date <= today + timedelta(days=6),
+            Appointment.status != "Cancelled"
+        ).all()
+
+        booked_slots = set()
+        for booking in existing_bookings:
+            booked_slots.add(f"{str(booking.date)}_{booking.time}")
+
+        for i in range(7):
+            current_date = today + timedelta(days=i)
+            date_str = current_date.strftime("%d/%m/%Y")
+
+            record = DoctorAvailability.query.filter_by(
+                doctor_id=doctor_id,
+                date=current_date
+            ).first()
+
+            morning_pref = record.available_morning if record else True
+            evening_pref = record.available_evening if record else True
+
+            morning_time = "08:00 - 12:00 am"
+            evening_time = "04:00 - 09:00 pm"
+
+            is_morning_available = morning_pref and (f"{str(current_date)}_{morning_time}" not in booked_slots)
+            is_evening_available = evening_pref and (f"{str(current_date)}_{evening_time}" not in booked_slots)
+
+            availability_list.append({
+                "date": date_str,
+                "raw_date": str(current_date),
+                "morning": {
+                    "time": morning_time,
+                    "available": is_morning_available
+                },
+                "evening": {
+                    "time": evening_time,
+                    "available": is_evening_available
+                }
+            })
+
+        return {"availability": availability_list}, 200
 
 
 class PaymentAPI(Resource):
