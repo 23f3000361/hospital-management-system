@@ -6,22 +6,33 @@
           <i class="fas fa-procedures me-2"></i> Patient Dashboard
         </span>
 
-        <div class="d-flex align-items-center text-white gap-3">
-          <div class="d-none d-md-block text-end me-3">
-            <small class="text-white-50">Welcome,</small><br />
-            <span class="fw-bold">{{ patientName }}</span>
-          </div>
+        <button
+          class="navbar-toggler"
+          data-bs-target="#navbarNav"
+          data-bs-toggle="collapse"
+          type="button"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-          <div class="btn-group">
-            <button class="btn btn-outline-light btn-sm" @click="openProfileModal">
-              <i class="fas fa-user-edit me-1"></i> Profile
-            </button>
-            <button class="btn btn-outline-light btn-sm" @click="fetchHistory">
-              <i class="fas fa-history me-1"></i> History
-            </button>
-            <button class="btn btn-danger btn-sm" @click="logout">
-              <i class="fas fa-sign-out-alt"></i>
-            </button>
+        <div id="navbarNav" class="collapse navbar-collapse justify-content-end">
+          <div class="d-flex align-items-center gap-3 py-2 py-lg-0">
+            <div class="text-white text-end me-2 d-none d-lg-block">
+              <small class="text-white-50">Welcome,</small><br />
+              <span class="fw-bold">{{ patientName }}</span>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-light btn-sm px-3" @click="openProfileModal">
+                <i class="fas fa-user-edit me-1"></i> Profile
+              </button>
+              <button class="btn btn-outline-light btn-sm px-3" @click="fetchHistory">
+                <i class="fas fa-history me-1"></i> History
+              </button>
+              <button class="btn btn-danger btn-sm px-4 fw-bold" @click="logout">
+                Logout <i class="fas fa-sign-out-alt ms-1"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -412,18 +423,13 @@ export default {
       patientName: 'Patient',
       departments: [],
       upcomingAppointments: [],
-
       selectedDepartment: {},
       departmentDoctors: [],
-
       selectedDoctor: {},
-
       availabilityList: [],
       selectedSlot: null,
-
       patientHistory: [],
       profileForm: { name: '', phone: '', address: '', date_of_birth: '' },
-
       modals: {},
     }
   },
@@ -487,13 +493,10 @@ export default {
 
     async viewAvailability(doctor) {
       if (!doctor.user_id && doctor.id) doctor.user_id = doctor.id
-
       this.selectedDoctor = doctor
       this.availabilityList = []
       this.selectedSlot = null
-
       this.showModal('availabilityModal')
-
       const data = await this.apiRequest(`/patient/doctor_availability/${doctor.user_id}`)
       if (data) {
         this.availabilityList = data.availability
@@ -504,7 +507,6 @@ export default {
       const slotInfo = day[type]
       const slotId = `${day.date}_${slotInfo.time}`
       const isSelected = this.selectedSlot && this.selectedSlot.id === slotId
-
       if (isSelected) return 'btn-success text-white'
       if (slotInfo.available) return 'btn-outline-success'
       return 'btn-secondary disabled opacity-50'
@@ -522,13 +524,11 @@ export default {
 
     async bookAppointment() {
       if (!this.selectedSlot || !this.selectedDoctor.user_id) return
-
       const payload = {
         doctor_id: this.selectedDoctor.user_id,
         date: this.selectedSlot.raw_date,
         time: this.selectedSlot.time,
       }
-
       const res = await this.apiRequest('/patient/book_appointment', 'POST', payload)
       if (res) {
         alert(res.message)
@@ -624,7 +624,6 @@ export default {
   background-color: #f8f9fa;
   min-height: 100vh;
 }
-
 .bg-indigo {
   background-color: #6610f2;
 }
@@ -642,14 +641,12 @@ export default {
 .bg-indigo-soft {
   background-color: rgba(102, 16, 242, 0.1);
 }
-
 .bg-teal {
   background-color: #20c997;
 }
 .text-teal {
   color: #20c997;
 }
-
 .card {
   transition: none;
 }
