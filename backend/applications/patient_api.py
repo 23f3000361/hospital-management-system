@@ -2,11 +2,7 @@ from flask import request, send_file, jsonify
 from flask_restful import Resource
 from .models import db, User, Appointment, Department, DoctorAvailability
 from sqlalchemy.orm import joinedload
-from flask_jwt_extended import (
-    get_jwt_identity,
-    jwt_required,
-    get_jwt,
-)
+from flask_jwt_extended import get_jwt_identity, jwt_required, get_jwt
 from datetime import datetime, date, timedelta
 import io
 import csv
@@ -19,7 +15,7 @@ ALLOWED_ROLES = ["Admin", "Doctor", "Patient"]
 
 class PatientProfileAPI(Resource):
     @jwt_required()
-    @cache.cached(timeout=120)
+    # Removed cache here to ensure profile edits show instantly
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
@@ -37,7 +33,9 @@ class PatientProfileAPI(Resource):
             "email": patient.email,
             "phone": patient.phone,
             "gender": patient.gender,
-            "date_of_birth": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
+            "date_of_birth": (
+                patient.date_of_birth.isoformat() if patient.date_of_birth else None
+            ),
             "address": patient.address,
             "emergency_contact": patient.emergency_contact,
             "blood_group": patient.blood_group,
@@ -59,16 +57,20 @@ class PatientProfileAPI(Resource):
 
         data = request.json
 
-        if 'date_of_birth' in data:
-            dob_value = data['date_of_birth']
+        if "date_of_birth" in data:
+            dob_value = data["date_of_birth"]
             if dob_value:
                 try:
-                    patient.date_of_birth = datetime.strptime(str(dob_value).strip(), '%Y-%m-%d').date()
+                    patient.date_of_birth = datetime.strptime(
+                        str(dob_value).strip(), "%Y-%m-%d"
+                    ).date()
                 except ValueError:
-                    return {"message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."}, 400
+                    return {
+                        "message": "Invalid date format for date_of_birth. Please use YYYY-MM-DD."
+                    }, 400
             else:
                 patient.date_of_birth = None
-            del data['date_of_birth']
+            del data["date_of_birth"]
 
         for key, value in data.items():
             if hasattr(patient, key) and key not in [
@@ -85,23 +87,22 @@ class PatientProfileAPI(Resource):
 
 class PatientAppointmentsAPI(Resource):
     @jwt_required()
-    @cache.cached(timeout=120)
     def get(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
             return {"message": "Only patients can view their appointments"}, 403
 
         patient_id = get_jwt_identity()
-
-        # Get query parameters for filtering (e.g., upcoming_only)
         upcoming_only = request.args.get("upcoming_only", "false").lower() == "true"
 
         query = Appointment.query.filter_by(patient_id=patient_id).options(
-            joinedload(Appointment.doctor).joinedload(User.department)
+            joinedload(Appointment.doctor).joinedload(User.department),
+            joinedload(Appointment.treatment),
         )
 
         if upcoming_only:
             query = query.filter(Appointment.date >= date.today())
+            query = query.filter(Appointment.status == "Booked")
 
         appointments = query.order_by(Appointment.date, Appointment.time).all()
 
@@ -114,6 +115,20 @@ class PatientAppointmentsAPI(Resource):
                 else "N/A"
             )
 
+            treatment_info = {}
+            if appt.treatment:
+                treatment_info = {
+                    "diagnosis": appt.treatment.diagnosis,
+                    "prescription": appt.treatment.prescription,
+                    "notes": appt.treatment.notes,
+                }
+            else:
+                treatment_info = {
+                    "diagnosis": "N/A",
+                    "prescription": "N/A",
+                    "notes": "N/A",
+                }
+
             result.append(
                 {
                     "appointment_id": appt.appointment_id,
@@ -122,6 +137,9 @@ class PatientAppointmentsAPI(Resource):
                     "date": str(appt.date),
                     "time": appt.time,
                     "status": appt.status,
+                    "diagnosis": treatment_info["diagnosis"],
+                    "prescription": treatment_info["prescription"],
+                    "notes": treatment_info["notes"],
                 }
             )
         return {"appointments": result}, 200
@@ -146,27 +164,6 @@ class PatientAppointmentsAPI(Resource):
         appointment.status = "Cancelled"
         db.session.commit()
         return {"message": f"Appointment {appointment_id} has been cancelled."}, 200
-
-
-class DepartmentListAPI(Resource):
-    @jwt_required()
-    @cache.cached(timeout=120)
-    def get(self):
-        claims = get_jwt()
-        if claims.get("role") not in ["Admin", "Patient"]:  # Both can view departments
-            return {"message": "Access denied"}, 403
-
-        departments = Department.query.all()
-        result = [
-            {
-                "department_id": d.department_id,
-                "department_name": d.department_name,
-                "description": d.description,
-                "head_doctor": d.head_doctor.name if d.head_doctor else "N/A",
-            }
-            for d in departments
-        ]
-        return {"departments": result}, 200
 
 
 class DepartmentDoctorsAPI(Resource):
@@ -228,9 +225,67 @@ class DoctorProfilePatientViewAPI(Resource):
         }, 200
 
 
-class PatientBookAppointmentAPI(
-    Resource
-):  # Already existed, but including for completeness
+class PatientViewDoctorAvailabilityAPI(Resource):
+    @jwt_required()
+    def get(self, doctor_id):
+        claims = get_jwt()
+        if claims.get("role") != "Patient":
+            return {"message": "Access denied"}, 403
+
+        today = date.today()
+        availability_list = []
+
+        existing_bookings = Appointment.query.filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.date >= today,
+            Appointment.date <= today + timedelta(days=6),
+            Appointment.status != "Cancelled",
+        ).all()
+
+        booked_slots = set()
+        for booking in existing_bookings:
+            booked_slots.add(f"{str(booking.date)}_{booking.time}")
+
+        for i in range(7):
+            current_date = today + timedelta(days=i)
+            date_str = current_date.strftime("%d/%m/%Y")
+
+            record = DoctorAvailability.query.filter_by(
+                doctor_id=doctor_id, date=current_date
+            ).first()
+
+            morning_pref = record.available_morning if record else True
+            evening_pref = record.available_evening if record else True
+
+            morning_time = "08:00 - 12:00 pm"
+            evening_time = "04:00 - 09:00 pm"
+
+            is_morning_available = morning_pref and (
+                f"{str(current_date)}_{morning_time}" not in booked_slots
+            )
+            is_evening_available = evening_pref and (
+                f"{str(current_date)}_{evening_time}" not in booked_slots
+            )
+
+            availability_list.append(
+                {
+                    "date": date_str,
+                    "raw_date": str(current_date),
+                    "morning": {
+                        "time": morning_time,
+                        "available": is_morning_available,
+                    },
+                    "evening": {
+                        "time": evening_time,
+                        "available": is_evening_available,
+                    },
+                }
+            )
+
+        return {"availability": availability_list}, 200
+
+
+class PatientBookAppointmentAPI(Resource):
     @jwt_required()
     def post(self):
         claims = get_jwt()
@@ -259,12 +314,11 @@ class PatientBookAppointmentAPI(
         if not doctor:
             return {"message": "Doctor not found or inactive"}, 404
 
-        # Check for existing appointment at the same time for this doctor
         existing_appt = Appointment.query.filter_by(
             doctor_id=doctor_id, date=appointment_date, time=time, status="Booked"
         ).first()
         if existing_appt:
-            return {"message": "Doctor is already booked at this time"}, 409  # Conflict
+            return {"message": "Doctor is already booked at this time"}, 409
 
         patient_id = get_jwt_identity()
         new_appt = Appointment(
@@ -363,65 +417,11 @@ class DoctorListAPI(Resource):
                 "phone": d.phone,
                 "department": d.department.department_name if d.department else "N/A",
                 "status": d.status,
-                "qualification":d.qualification,
+                "qualification": d.qualification,
             }
             for d in doctors
         ]
         return {"doctors": result}, 200
-
-class PatientViewDoctorAvailabilityAPI(Resource):
-    @jwt_required()
-    def get(self, doctor_id):
-        claims = get_jwt()
-        if claims.get("role") != "Patient":
-            return {"message": "Access denied"}, 403
-
-        today = date.today()
-        availability_list = []
-
-        existing_bookings = Appointment.query.filter(
-            Appointment.doctor_id == doctor_id,
-            Appointment.date >= today,
-            Appointment.date <= today + timedelta(days=6),
-            Appointment.status != "Cancelled"
-        ).all()
-
-        booked_slots = set()
-        for booking in existing_bookings:
-            booked_slots.add(f"{str(booking.date)}_{booking.time}")
-
-        for i in range(7):
-            current_date = today + timedelta(days=i)
-            date_str = current_date.strftime("%d/%m/%Y")
-
-            record = DoctorAvailability.query.filter_by(
-                doctor_id=doctor_id,
-                date=current_date
-            ).first()
-
-            morning_pref = record.available_morning if record else True
-            evening_pref = record.available_evening if record else True
-
-            morning_time = "08:00 - 12:00 am"
-            evening_time = "04:00 - 09:00 pm"
-
-            is_morning_available = morning_pref and (f"{str(current_date)}_{morning_time}" not in booked_slots)
-            is_evening_available = evening_pref and (f"{str(current_date)}_{evening_time}" not in booked_slots)
-
-            availability_list.append({
-                "date": date_str,
-                "raw_date": str(current_date),
-                "morning": {
-                    "time": morning_time,
-                    "available": is_morning_available
-                },
-                "evening": {
-                    "time": evening_time,
-                    "available": is_evening_available
-                }
-            })
-
-        return {"availability": availability_list}, 200
 
 
 class PaymentAPI(Resource):
@@ -446,17 +446,14 @@ class ExportPatientHistoryAPI(Resource):
     def post(self):
         claims = get_jwt()
         if claims.get("role") != "Patient":
-            return jsonify({"message": "Only patients can export their history"}), 403
+            # Just return a dict, not jsonify({...})
+            return {"message": "Only patients can export their history"}, 403
 
         patient_id = get_jwt_identity()
 
         export_patient_history_csv.delay(patient_id)
 
-        return (
-            jsonify(
-                {
-                    "message": "CSV export has been started. You will be notified when it's complete."
-                }
-            ),
-            202,
-        )
+        # FIX: Remove jsonify()
+        return {
+            "message": "CSV export has been started. You will be notified when it's complete."
+        }, 202

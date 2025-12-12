@@ -1,3 +1,4 @@
+from email.mime.application import MIMEApplication
 from flask import current_app
 from datetime import date, datetime
 from sqlalchemy import extract
@@ -6,188 +7,151 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
+from email import encoders
 import csv
 import io
 from .worker import celery
-from celery.schedules import crontab
 from sqlalchemy.orm import joinedload
-from email import encoders
+
+# --- MAILHOG CONFIG ---
+SMTP_HOST = "localhost"
+SMTP_PORT = 1025
+SENDER_EMAIL = "admin@hms.com"
+# ----------------------
 
 
 @celery.task
 def send_daily_reminders():
-    with current_app.app_context():
-        today = date.today()
-        appointments = Appointment.query.filter_by(date=today, status="Booked").all()
+    today = date.today()
+    appointments = Appointment.query.filter_by(date=today, status="Booked").all()
 
-        for appt in appointments:
-            patient = User.query.get(appt.patient_id)
+    if not appointments:
+        return "No appointments today."
 
-            if patient and patient.email:
-                message = f"Hello {patient.name},\n\nThis is a reminder for your appointment at the hospital today at {appt.time}. Please be on time.\n\nThank you,\nThe Hospital Management Team"
+    for appt in appointments:
+        patient = User.query.get(appt.patient_id)
 
-                sender_email = "your_email@example.com"
-                password = "your_password"
-                subject = "Appointment Reminder"
+        if patient and patient.email:
+            subject = "Appointment Reminder"
+            body = f"Hello {patient.name},\n\nThis is a reminder for your appointment today at {appt.time}.\n\nRegards,\nHMS Team"
 
-                msg = MIMEMultipart()
-                msg["From"] = sender_email
-                msg["To"] = patient.email
-                msg["Subject"] = subject
-                msg.attach(MIMEText(message, "plain"))
+            send_email(patient.email, subject, body)
 
-                try:
-                    with smtplib.SMTP("smtp.example.com", 587) as server:
-                        server.starttls()  # Secure the connection
-                        server.login(sender_email, password)
-                        server.send_message(msg)
-                    print(f"Daily reminder sent to {patient.name} at {patient.email}")
-                except Exception as e:
-                    print(f"Failed to send email to {patient.name}: {e}")
+    return f"Sent reminders for {len(appointments)} appointments."
 
 
 @celery.task
 def generate_monthly_report():
-    with current_app.app_context():
-        today = datetime.now()
-        month = today.month
-        year = today.year
+    today = datetime.now()
+    month = today.month
+    year = today.year
 
-        doctors = User.query.filter_by(role="Doctor").all()
+    doctors = User.query.filter_by(role="Doctor").all()
 
-        for doctor in doctors:
-            appointments = Appointment.query.filter(
-                Appointment.doctor_id == doctor.user_id,
-                extract("month", Appointment.date) == month,
-                extract("year", Appointment.date) == year,
-            ).all()
+    for doctor in doctors:
+        appointments = Appointment.query.filter(
+            Appointment.doctor_id == doctor.user_id,
+            extract("month", Appointment.date) == month,
+            extract("year", Appointment.date) == year,
+        ).all()
 
-            report_html = f"<h1>Monthly Activity Report for Dr. {doctor.name}</h1>"
-            report_html += f"<h2>Month: {today.strftime('%B %Y')}</h2>"
-            report_html += "<table><thead><tr><th>Date</th><th>Patient</th><th>Diagnosis</th><th>Prescription</th></tr></thead><tbody>"
+        report_html = f"<h1>Monthly Activity Report for Dr. {doctor.name}</h1>"
+        report_html += f"<h2>Month: {today.strftime('%B %Y')}</h2>"
+        report_html += "<table border='1' cellspacing='0' cellpadding='5'><thead><tr><th>Date</th><th>Patient</th><th>Diagnosis</th></tr></thead><tbody>"
 
-            for appt in appointments:
-                treatment = Treatment.query.filter_by(
-                    appointment_id=appt.appointment_id
-                ).first()
-                patient = User.query.get(appt.patient_id)
+        for appt in appointments:
+            patient = appt.patient
+            treatment = appt.treatment
 
-                if not patient or not treatment:
-                    continue
+            diag = treatment.diagnosis if treatment else "N/A"
+            pat_name = patient.name if patient else "Unknown"
 
-                diagnosis = treatment.diagnosis if treatment else "N/A"
-                prescription = treatment.prescription if treatment else "N/A"
+            report_html += (
+                f"<tr><td>{appt.date}</td><td>{pat_name}</td><td>{diag}</td></tr>"
+            )
 
-                report_html += f"<tr><td>{appt.date}</td><td>{patient.name}</td><td>{diagnosis}</td><td>{prescription}</td></tr>"
+        report_html += "</tbody></table>"
 
-            report_html += "</tbody></table>"
+        if doctor.email:
+            send_email(
+                doctor.email,
+                f"Monthly Report - {today.strftime('%B')}",
+                report_html,
+                is_html=True,
+            )
 
-            if doctor.email:
-                msg = MIMEMultipart()
-                msg["From"] = "your_email@example.com"
-                msg["To"] = doctor.email
-                msg["Subject"] = f"Monthly Report for {today.strftime('%B %Y')}"
-                msg.attach(MIMEText(report_html, "html"))
-
-                try:
-                    with smtplib.SMTP("smtp.example.com", 587) as server:
-                        server.starttls()
-                        server.login("your_email@example.com", "your_password")
-                        server.send_message(msg)
-                    print(f"Monthly report sent to {doctor.name}")
-                except Exception as e:
-                    print(f"Failed to send email to {doctor.name}: {e}")
+    return "Monthly reports generated."
 
 
 @celery.task
 def export_patient_history_csv(patient_id):
-    with current_app.app_context():
-        patient = User.query.filter_by(user_id=patient_id, role="Patient").first()
-        if not patient:
-            return {"message": "Patient not found"}, 404
+    patient = User.query.filter_by(user_id=patient_id, role="Patient").first()
+    if not patient:
+        return "Patient not found"
 
-        # Query all appointments with their linked doctor and treatment data
-        appointments = (
-            Appointment.query.filter_by(patient_id=patient_id)
-            .options(joinedload(Appointment.doctor), joinedload(Appointment.treatment))
-            .all()
+    appointments = (
+        Appointment.query.filter_by(patient_id=patient_id)
+        .options(joinedload(Appointment.doctor), joinedload(Appointment.treatment))
+        .all()
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Doctor", "Diagnosis", "Prescription", "Notes"])
+
+    for appt in appointments:
+        doc = appt.doctor.name if appt.doctor else "N/A"
+        treat = appt.treatment
+
+        diag = treat.diagnosis if treat else "N/A"
+        pres = treat.prescription if treat else "N/A"
+        notes = treat.notes if treat else "N/A"
+
+        writer.writerow([str(appt.date), doc, diag, pres, notes])
+
+    # Prepare Attachment
+    filename = f"history_{patient_id}_{datetime.now().strftime('%Y%m%d')}.csv"
+
+    send_email(
+        patient.email,
+        "Your Medical History Export",
+        "Please find your requested medical history attached.",
+        attachment_name=filename,
+        attachment_data=output.getvalue(),
+    )
+
+    return "CSV Export Completed"
+
+
+def send_email(
+    to_email, subject, body, is_html=False, attachment_name=None, attachment_data=None
+):
+    msg = MIMEMultipart()
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = to_email
+    msg["Subject"] = subject
+
+    # Attach Body
+    msg.attach(MIMEText(body, "html" if is_html else "plain"))
+
+    # Attach CSV (Using MIMEApplication - More Robust)
+    if attachment_name and attachment_data:
+        print(
+            f"DEBUG: Attaching file '{attachment_name}' with size {len(attachment_data)} bytes"
         )
 
-        output = io.StringIO()
-        writer = csv.writer(output)
+        # Create the attachment object
+        part = MIMEApplication(attachment_data.encode("utf-8"), Name=attachment_name)
 
-        writer.writerow(
-            [
-                "user_id",
-                "username",
-                "consulting_doctor",
-                "appointment_date",
-                "diagnosis",
-                "prescription",
-                "next_visit",
-            ]
-        )
+        # Add headers to force download behavior
+        part["Content-Disposition"] = f'attachment; filename="{attachment_name}"'
 
-        for appt in appointments:
-            doctor = appt.doctor
-            treatment = appt.treatment
-
-            writer.writerow(
-                [
-                    patient.user_id,
-                    patient.name,
-                    doctor.name if doctor else "N/A",
-                    str(appt.date),
-                    treatment.diagnosis if treatment else "N/A",
-                    treatment.prescription if treatment else "N/A",
-                    (
-                        str(treatment.follow_up_date)
-                        if treatment and treatment.follow_up_date
-                        else "N/A"
-                    ),
-                ]
-            )
-
-        # Prepare the email
-        msg = MIMEMultipart()
-        msg["From"] = "your_email@example.com"
-        msg["To"] = patient.email
-        msg["Subject"] = "Your Patient History Export"
-
-        body = "Attached is your requested patient history in CSV format."
-        msg.attach(MIMEText(body, "plain"))
-
-        # Attach the CSV file
-        filename = f"patient_history_{patient_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(output.getvalue().encode("utf-8"))
-        encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f"attachment; filename= {filename}")
+        # Attach to message
         msg.attach(part)
 
-        # Send the email
-        try:
-            with smtplib.SMTP("smtp.example.com", 587) as server:
-                server.starttls()
-                server.login("your_email@example.com", "your_password")
-                server.send_message(msg)
-            print(f"CSV report successfully mailed to {patient.email}")
-        except Exception as e:
-            print(f"Failed to send email with CSV to {patient.email}: {e}")
-
-    return {"message": "CSV export completed and sent via email."}
-
-
-@celery.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(
-        crontab(hour=9, minute=0),
-        send_daily_reminders.s(),
-        name="daily appointment reminders",
-    )
-
-    sender.add_periodic_task(
-        crontab(day_of_month=1, hour=8, minute=0),
-        generate_monthly_report.s(),
-        name="monthly doctor activity report",
-    )
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.send_message(msg)
+        print(f"DEBUG: Email sent to {to_email}")
+    except Exception as e:
+        print(f"ERROR: Failed to send email to {to_email}: {e}")

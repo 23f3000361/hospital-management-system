@@ -4,17 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Update bg work">
-      <change afterPath="$PROJECT_DIR$/backend/applications/task.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/applications/worker.py" afterDir="false" />
+    <list default="true" id="f7a39f72-21c8-483a-86c1-75df0039eb29" name="Changes" comment="Update logout button">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/admin_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/admin_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/applications/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/auth_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/auth_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/doctor_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/doctor_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/applications/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/applications/patient_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/applications/patient_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/AdminDashboard.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/AdminDashboard.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/DoctorDashboard.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/DoctorDashboard.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/DoctorLogin.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/DoctorLogin.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/PatientDashboard.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/PatientDashboard.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/PatientLogin.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/PatientLogin.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +26,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="Vue Composition API Component" />
       </list>
     </option>
   </component>
@@ -68,46 +70,64 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.app.executor": "Run",
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "D:/IITM/Projects/MAD2/HMS",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_interpreter_path": "wsl://Ubuntu-24.04@/usr/bin/node",
-    "nodejs_package_manager_path": "npm",
-    "rearrange.code.on.save": "true",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;JavaScript Debug.localhost:5173.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultAutoModeForALLUsers.v1&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/IITM/Projects/MAD2/HMS&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_interpreter_path&quot;: &quot;wsl://Ubuntu-24.04@/usr/bin/node&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;D:\\IITM\\Projects\\MAD2\\HMS\\frontend\\node_modules\\prettier&quot;,
+    &quot;rearrange.code.on.save&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;D:\\Softwares\\WebStorm\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "sqlite"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;
+    ],
+    &quot;vue.recent.templates&quot;: [
+      &quot;Vue Composition API Component&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\IITM\Projects\MAD2\HMS\backend\applications" />
       <recent name="D:\IITM\Projects\MAD2\HMS\backend" />
     </key>
   </component>
+  <component name="RunManager">
+    <configuration name="localhost:5173" type="JavascriptDebugType" temporary="true" nameIsGenerated="true" uri="http://localhost:5173/">
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JavaScript Debug.localhost:5173" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-9c94529fcfe0-JavaScript-WS-252.26199.162" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-WS-252.28238.10" />
       </set>
     </attachedChunks>
   </component>
@@ -155,7 +175,35 @@
       <workItem from="1759318679942" duration="634000" />
       <workItem from="1759319372165" duration="32000" />
       <workItem from="1759319422525" duration="178000" />
-      <workItem from="1759319692166" duration="4338000" />
+      <workItem from="1759319692166" duration="7430000" />
+      <workItem from="1759347905029" duration="3012000" />
+      <workItem from="1759392811511" duration="6000" />
+      <workItem from="1759427166269" duration="1278000" />
+      <workItem from="1759428581838" duration="2937000" />
+      <workItem from="1759431596278" duration="489000" />
+      <workItem from="1759432150183" duration="7240000" />
+      <workItem from="1759467039638" duration="456000" />
+      <workItem from="1759511563254" duration="415000" />
+      <workItem from="1759766002585" duration="345000" />
+      <workItem from="1759827626824" duration="595000" />
+      <workItem from="1759833454155" duration="180000" />
+      <workItem from="1760027537268" duration="610000" />
+      <workItem from="1760181330224" duration="358000" />
+      <workItem from="1760627663623" duration="844000" />
+      <workItem from="1761053585693" duration="551000" />
+      <workItem from="1762778369896" duration="7484000" />
+      <workItem from="1762850968887" duration="3965000" />
+      <workItem from="1762870381023" duration="3941000" />
+      <workItem from="1762887446493" duration="3948000" />
+      <workItem from="1762937390154" duration="14811000" />
+      <workItem from="1763639115061" duration="776000" />
+      <workItem from="1763650317941" duration="7911000" />
+      <workItem from="1763664625627" duration="10676000" />
+      <workItem from="1763994923047" duration="8929000" />
+      <workItem from="1764008754600" duration="2916000" />
+      <workItem from="1764050609101" duration="3796000" />
+      <workItem from="1764078293246" duration="12911000" />
+      <workItem from="1764430008487" duration="253000" />
     </task>
     <task id="LOCAL-00001" summary="Intial Commit">
       <option name="closed" value="true" />
@@ -309,7 +357,183 @@
       <option name="project" value="LOCAL" />
       <updated>1759001827580</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Update APIs">
+      <option name="closed" value="true" />
+      <created>1759338168291</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338168291</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Update models">
+      <option name="closed" value="true" />
+      <created>1759338205748</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338205748</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Update main">
+      <option name="closed" value="true" />
+      <created>1759338229751</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338229751</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Update task">
+      <option name="closed" value="true" />
+      <created>1759338257584</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338257584</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Update worker">
+      <option name="closed" value="true" />
+      <created>1759338268621</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338268621</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Update bg work">
+      <option name="closed" value="true" />
+      <created>1759338279292</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1759338279292</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Update bg work">
+      <option name="closed" value="true" />
+      <created>1763639902701</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1763639902701</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Update main.py">
+      <option name="closed" value="true" />
+      <created>1763639935308</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1763639935308</updated>
+    </task>
+    <task id="LOCAL-00028" summary="Create AdminDashboard">
+      <option name="closed" value="true" />
+      <created>1764052299939</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052299939</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Create AdminLogin">
+      <option name="closed" value="true" />
+      <created>1764052332573</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052332573</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Create DoctorDashboard">
+      <option name="closed" value="true" />
+      <created>1764052400642</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052400642</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Add DoctorAvailability column">
+      <option name="closed" value="true" />
+      <created>1764052442832</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052442832</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Add resources and import necessities">
+      <option name="closed" value="true" />
+      <created>1764052480149</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052480149</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Create DoctorLogin">
+      <option name="closed" value="true" />
+      <created>1764052497880</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052497880</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Create DoctorSignUp">
+      <option name="closed" value="true" />
+      <created>1764052511564</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052511564</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Create HomeView">
+      <option name="closed" value="true" />
+      <created>1764052526958</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052526958</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Create PatientDashboard">
+      <option name="closed" value="true" />
+      <created>1764052548737</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052548737</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Create PatientLogin">
+      <option name="closed" value="true" />
+      <created>1764052560879</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052560879</updated>
+    </task>
+    <task id="LOCAL-00038" summary="Create PatientSignUp">
+      <option name="closed" value="true" />
+      <created>1764052579421</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052579421</updated>
+    </task>
+    <task id="LOCAL-00039" summary="Update PatientCheckDoctorAvailabilityAPI">
+      <option name="closed" value="true" />
+      <created>1764052620294</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052620294</updated>
+    </task>
+    <task id="LOCAL-00040" summary="Update styling">
+      <option name="closed" value="true" />
+      <created>1764052845876</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1764052845876</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Update logout button">
+      <option name="closed" value="true" />
+      <created>1764053234642</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1764053234642</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -330,20 +554,31 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Intial Commit" />
-    <MESSAGE value="Intial Commit Version2" />
-    <MESSAGE value="Commit 3" />
-    <MESSAGE value="Commit 5" />
-    <MESSAGE value="Commit 6" />
-    <MESSAGE value="Add models" />
-    <MESSAGE value="Add models pt. 2" />
     <MESSAGE value="Add models pt. 3" />
     <MESSAGE value="Add API" />
     <MESSAGE value="Add bg work" />
     <MESSAGE value="Add APIs pt. 2" />
-    <MESSAGE value="Update main" />
+    <MESSAGE value="Update APIs" />
     <MESSAGE value="Update models" />
+    <MESSAGE value="Update main" />
+    <MESSAGE value="Update task" />
+    <MESSAGE value="Update worker" />
     <MESSAGE value="Update bg work" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update bg work" />
+    <MESSAGE value="Update main.py" />
+    <MESSAGE value="Create AdminDashboard" />
+    <MESSAGE value="Create AdminLogin" />
+    <MESSAGE value="Create DoctorDashboard" />
+    <MESSAGE value="Add DoctorAvailability column" />
+    <MESSAGE value="Add resources and import necessities" />
+    <MESSAGE value="Create DoctorLogin" />
+    <MESSAGE value="Create DoctorSignUp" />
+    <MESSAGE value="Create HomeView" />
+    <MESSAGE value="Create PatientDashboard" />
+    <MESSAGE value="Create PatientLogin" />
+    <MESSAGE value="Create PatientSignUp" />
+    <MESSAGE value="Update PatientCheckDoctorAvailabilityAPI" />
+    <MESSAGE value="Update styling" />
+    <MESSAGE value="Update logout button" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update logout button" />
   </component>
 </project>

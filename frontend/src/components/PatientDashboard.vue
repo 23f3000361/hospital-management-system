@@ -539,10 +539,17 @@ export default {
 
     async cancelAppointment(id) {
       if (!confirm('Cancel this appointment?')) return
+
+      const idx = this.upcomingAppointments.findIndex((a) => a.appointment_id === id)
+      if (idx !== -1) this.upcomingAppointments.splice(idx, 1)
+
       const res = await this.apiRequest(`/patient/appointments/${id}`, 'DELETE')
-      if (res) {
-        alert('Appointment cancelled')
+
+      if (!res) {
+        alert('Failed to cancel. Refreshing data...')
         this.fetchDashboardData()
+      } else {
+        console.log('Appointment cancelled successfully')
       }
     },
 
@@ -555,21 +562,12 @@ export default {
     },
 
     async exportCSV() {
-      const token = this.getToken()
-      const response = await fetch('/api/patient/history/export_csv', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'patient_history.csv'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-      } else {
-        alert('Failed to download CSV')
+      // Trigger the background Celery task
+      const res = await this.apiRequest('/patient/history/export', 'POST')
+      
+      if (res) {
+        // Show confirmation that the job has started
+        alert(res.message || "CSV export started. You will receive an email shortly.")
       }
     },
 

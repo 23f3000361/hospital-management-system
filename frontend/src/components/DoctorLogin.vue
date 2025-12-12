@@ -30,7 +30,7 @@
             />
           </div>
 
-          <div v-if="errorMessage" class="text-danger">{{ errorMessage }}</div>
+          <div v-if="errorMessage" class="text-danger mb-3">{{ errorMessage }}</div>
 
           <div class="d-grid">
             <button class="btn btn-info btn-lg rounded-3 py-3 text-white" type="submit">
@@ -42,6 +42,13 @@
         <div class="text-center mt-4">
           <router-link class="text-info text-decoration-none fw-bold" to="/doctor-signup">
             New Doctor? Register Here
+          </router-link>
+        </div>
+
+        <!-- Back to Role Selection Link -->
+        <div class="text-center mt-3">
+          <router-link class="text-secondary text-decoration-none small" to="/">
+            <i class="fas fa-arrow-left me-1"></i>← Back to Role Selection
           </router-link>
         </div>
       </div>

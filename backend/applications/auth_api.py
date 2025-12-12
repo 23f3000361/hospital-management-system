@@ -1,13 +1,8 @@
 from flask import request
 from flask_restful import Resource
-from .models import db, User, Appointment, Department, Treatment
-from sqlalchemy.orm import joinedload
+from .models import db, User
 from flask_jwt_extended import (
-    create_access_token,
-    get_jwt_identity,
-    jwt_required,
-    JWTManager,
-    get_jwt,
+    create_access_token
 )
 from datetime import datetime, date
 
@@ -36,11 +31,12 @@ class LoginAPI(Resource):
             return {"message": "Incorrect Password"}, 400
 
         token = create_access_token(
-            identity=user.user_id, additional_claims={"role": user.role}
+            identity=str(user.user_id), additional_claims={"role": user.role}
         )
         return {
             "message": f"{user.name} ({user.role}) logged in successfully.",
             "token": token,
+            "role": user.role
         }, 200
 
 
@@ -74,12 +70,26 @@ class SignUpAPI(Resource):
             }, 400
 
         if len(data.get("phone", "").strip()) > 10:
-            return {"message": "Phone number should not be more than 10 numbers"}, 400
+            return {"message": "Phone number should not be more than 10 digits"}, 400
 
-        try:
-            datetime.strptime(data.get("date_of_birth", "").strip(), "%d-%m-%Y")
-        except ValueError:
-            return {"message": "Date of Birth should be in dd-mm-yyyy format"}, 400
+        if len(data.get("phone", "").strip()) < 10:
+            return {"message": "Phone number should be 10 digits"}, 400
+
+        dob_raw = data.get("date_of_birth", "").strip()
+        if dob_raw:
+            parsed = None
+            for fmt in ("%Y-%m-%d", "%d-%m-%Y"):
+                try:
+                    parsed = datetime.strptime(dob_raw, fmt).date()
+                    break
+                except ValueError:
+                    pass
+            if not parsed:
+                return {
+                    "message": "Date of Birth should be in YYYY-MM-DD or DD-MM-YYYY format"
+                }, 400
+        else:
+            parsed = None
 
         user = User.query.filter_by(email=email).first()
         if user:
@@ -97,7 +107,7 @@ class SignUpAPI(Resource):
             role=role,
             phone=data.get("phone"),
             gender=data.get("gender"),
-            date_of_birth=data.get("date_of_birth"),
+            date_of_birth=parsed if parsed else None,
             address=data.get("address"),
             emergency_contact=data.get("emergency_contact"),
             blood_group=data.get("blood_group"),
@@ -107,4 +117,4 @@ class SignUpAPI(Resource):
         db.session.add(new_user)
         db.session.commit()
 
-        return {"message": f"{user.name} ({user.role}) signed in successfully."}, 201
+        return {"message": f"{new_user.name} ({new_user.role}) signed up successfully."}, 201

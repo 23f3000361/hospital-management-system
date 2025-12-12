@@ -29,7 +29,51 @@
 
       <div class="row gy-4">
         <div class="col-lg-8">
-          <div class="card shadow-lg mb-4 border-0">
+          <!-- DEPARTMENTS SECTION -->
+          <div class="card shadow-sm mb-4 border-0">
+            <div
+              class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            >
+              <h4 class="mb-0"><i class="fas fa-clinic-medical me-2"></i> Departments</h4>
+              <button class="btn btn-light text-primary fw-bold" @click="openDepartmentModal">
+                <i class="fas fa-plus me-2"></i> Add Department
+              </button>
+            </div>
+            <div class="card-body">
+              <div v-if="departments.length === 0" class="text-center text-muted py-3">
+                No departments found. Please create one.
+              </div>
+              <div v-else class="row g-3">
+                <div v-for="dept in departments" :key="dept.department_id" class="col-md-6">
+                  <div
+                    class="p-3 border rounded bg-light h-100 d-flex flex-column position-relative"
+                  >
+                    <!-- Edit Department Button -->
+                    <button
+                      class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2"
+                      @click="openEditDepartmentModal(dept)"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+
+                    <h5 class="fw-bold text-primary mb-1 pe-4">{{ dept.department_name }}</h5>
+                    <small class="text-muted mb-2 flex-grow-1">{{
+                      dept.description || 'No description provided.'
+                    }}</small>
+                    <div>
+                      <span v-if="dept.head_doctor !== 'N/A'" class="badge bg-success">
+                        <i class="fas fa-user-md me-1"></i> HOD: {{ dept.head_doctor }}
+                      </span>
+                      <span v-else class="badge bg-secondary">No HOD Assigned</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOCTORS SECTION -->
+          <div class="card shadow-sm mb-4 border-0">
             <div
               class="card-header bg-success text-white d-flex justify-content-between align-items-center"
             >
@@ -51,14 +95,14 @@
                       >Blacklisted</span
                     >
                     <br />
+                    <!-- ADDED EMAIL HERE -->
+                    <small class="text-dark"
+                      ><i class="fas fa-envelope me-1"></i> {{ doctor.email }}</small
+                    >
+                    <br />
                     <small class="text-muted">
                       <i class="fas fa-graduation-cap me-1"></i>
-                      {{
-                        doctor.qualification ||
-                        doctor.qualifications ||
-                        doctor.specialization ||
-                        'Qualification not set'
-                      }}
+                      {{ doctor.qualification || 'Qualification not set' }}
                     </small>
                   </div>
                   <div class="d-flex gap-2">
@@ -74,7 +118,6 @@
                     >
                       <i class="fas fa-trash"></i> Delete
                     </button>
-
                     <button
                       v-if="doctor.status !== 'Inactive'"
                       class="btn btn-outline-dark rounded-pill px-3"
@@ -97,7 +140,8 @@
             </div>
           </div>
 
-          <div class="card shadow-lg border-0">
+          <!-- PATIENTS SECTION -->
+          <div class="card shadow-sm border-0">
             <div
               class="card-header bg-warning text-dark d-flex justify-content-between align-items-center"
             >
@@ -131,7 +175,6 @@
                     >
                       <i class="fas fa-trash"></i> Delete
                     </button>
-
                     <button
                       v-if="patient.status !== 'Inactive'"
                       class="btn btn-outline-dark rounded-pill px-3"
@@ -155,8 +198,9 @@
           </div>
         </div>
 
+        <!-- RIGHT COLUMN -->
         <div class="col-lg-4">
-          <div class="card shadow-lg border-0">
+          <div class="card shadow-sm border-0">
             <div class="card-header bg-info text-white">
               <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i> Upcoming Appointments</h4>
             </div>
@@ -199,6 +243,82 @@
       </div>
     </div>
 
+    <!-- DEPARTMENT MODAL (Updated for Edit) -->
+    <div id="departmentModal" class="modal fade" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">
+              {{ deptModalMode === 'create' ? 'Add New Department' : 'Edit Department' }}
+            </h5>
+            <button
+              class="btn-close btn-close-white"
+              type="button"
+              @click="hideActiveModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="handleDepartmentSubmit">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Department Name</label>
+                <input
+                  v-model="departmentForm.department_name"
+                  class="form-control"
+                  required
+                  type="text"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Description</label>
+                <textarea
+                  v-model="departmentForm.description"
+                  class="form-control"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <!-- Head of Department Dropdown (Only in Edit Mode) -->
+              <div v-if="deptModalMode === 'edit'" class="mb-3">
+                <label class="form-label fw-bold">Head of Department</label>
+                <select v-model="departmentForm.head_doctor_id" class="form-select">
+                  <option :value="null">-- None --</option>
+
+                  <!-- FILTER LOGIC:
+                       1. Status is Active
+                       2. AND (Belongs to THIS department OR Belongs to NO department)
+                  -->
+                  <option
+                    v-for="doc in doctors.filter(d =>
+                      d.status === 'Active' &&
+                      (d.department_id == departmentForm.department_id || !d.department_id)
+                    )"
+                    :key="doc.user_id"
+                    :value="doc.user_id"
+                  >
+                    {{ doc.name }} ({{ doc.department || 'Unassigned' }})
+                  </option>
+                </select>
+
+                <div class="form-text text-muted">
+                  Lists doctors currently in this department or unassigned doctors.
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" @click="hideActiveModal">
+                  Close
+                </button>
+                <button class="btn btn-primary" type="submit">
+                  {{ deptModalMode === 'create' ? 'Create' : 'Save Changes' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctor Modal -->
     <div id="doctorModal" class="modal fade" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -238,6 +358,49 @@
                   />
                 </div>
               </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold" for="doctorDept">Assign Department</label>
+
+                <select
+                  v-if="departments.length > 0"
+                  id="doctorDept"
+                  v-model="editingDoctor.department_id"
+                  class="form-select"
+                  required
+                >
+                  <option disabled selected value="">Select a Department</option>
+                  <option
+                    v-for="dept in departments"
+                    :key="dept.department_id"
+                    :value="dept.department_id"
+                  >
+                    {{ dept.department_name }}
+                  </option>
+                </select>
+
+                <div
+                  v-else
+                  class="alert alert-warning d-flex align-items-center justify-content-between p-2"
+                >
+                  <span>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No departments found!
+                  </span>
+                  <button
+                    class="btn btn-sm btn-outline-dark fw-bold"
+                    type="button"
+                    @click="switchToDepartmentModal"
+                  >
+                    + Create One
+                  </button>
+                </div>
+
+                <div v-if="departments.length === 0" class="form-text text-danger">
+                  You cannot create a doctor without assigning a department.
+                </div>
+              </div>
+
               <div class="mb-3">
                 <label class="form-label fw-bold" for="doctorPassword">Password</label>
                 <input
@@ -253,8 +416,7 @@
                   Password must be at least 8 characters long.
                 </small>
                 <small v-else class="form-text text-muted">
-                  Leave blank to keep the current password. If you change it, it must be at least 8
-                  characters long.
+                  Leave blank to keep the current password.
                 </small>
               </div>
               <div class="row">
@@ -298,6 +460,7 @@
       </div>
     </div>
 
+    <!-- Patient, History Modals (Unchanged) -->
     <div id="patientModal" class="modal fade" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -331,7 +494,6 @@
                   readonly
                   type="email"
                 />
-                <small class="form-text text-muted">The patient's email cannot be changed.</small>
               </div>
               <div class="mb-3">
                 <label class="form-label fw-bold" for="patientPhone">Phone</label>
@@ -418,13 +580,21 @@ export default {
   name: 'AdminDashboard',
   data() {
     return {
+      departments: [],
       doctors: [],
       patients: [],
       appointments: [],
       searchQuery: '',
       modalMode: 'create',
+      deptModalMode: 'create', // New mode for Department modal
       editingDoctor: {},
       editingPatient: {},
+      departmentForm: {
+        department_id: null,
+        department_name: '',
+        description: '',
+        head_doctor_id: null,
+      },
       currentPatientHistory: null,
       activeModal: null,
     }
@@ -483,7 +653,6 @@ export default {
         return responseData
       } catch (error) {
         alert(error.message)
-        console.error(`API Error: ${error.message}`)
         return null
       }
     },
@@ -532,43 +701,33 @@ export default {
     },
 
     async fetchAllData() {
+      await this.fetchDepartments()
       await this.fetchDoctors()
       await this.fetchPatients()
       await this.fetchAppointments()
     },
 
-    async fetchDoctors() {
-      const data = await this.apiRequest('/doctors')
-
-      if (data) {
-        const sample = Array.isArray(data) ? data[0] : data.doctors ? data.doctors[0] : null
-        console.log('DEBUG - DOCTOR DATA:', sample)
+    async fetchDepartments() {
+      const data = await this.apiRequest('/departments')
+      if (data && data.departments) {
+        this.departments = data.departments
       }
+    },
 
-      if (data) {
-        if (data.doctors && Array.isArray(data.doctors)) {
-          this.doctors = data.doctors
-        } else if (Array.isArray(data)) {
-          this.doctors = data
-        }
+    async fetchDoctors() {
+      const data = await this.apiRequest('/admin/doctors')
+      if (data && data.doctors) {
+        this.doctors = data.doctors
       }
     },
 
     async fetchPatients() {
       const data = await this.apiRequest('/admin/patients')
-
       if (data) {
-        if (Array.isArray(data)) {
-          this.patients = data
-        } else if (data.patients && Array.isArray(data.patients)) {
-          this.patients = data.patients
-        } else if (data.users && Array.isArray(data.users)) {
-          this.patients = data.users
-        } else if (data.data && Array.isArray(data.data)) {
-          this.patients = data.data
-        } else {
-          console.warn('Could not find patient array in response')
-        }
+        if (Array.isArray(data)) this.patients = data
+        else if (data.patients) this.patients = data.patients
+        else if (data.users) this.patients = data.users
+        else if (data.data) this.patients = data.data
       }
     },
 
@@ -579,6 +738,56 @@ export default {
       }
     },
 
+    // --- DEPARTMENT LOGIC ---
+    openDepartmentModal() {
+      this.deptModalMode = 'create'
+      this.departmentForm = { department_name: '', description: '', head_doctor_id: null }
+      this.showModal('departmentModal')
+    },
+
+    openEditDepartmentModal(dept) {
+      this.deptModalMode = 'edit'
+      this.departmentForm = {
+        department_id: dept.department_id,
+        department_name: dept.department_name,
+        description: dept.description,
+        head_doctor_id: dept.head_doctor_id || null,
+      }
+      this.showModal('departmentModal')
+    },
+
+    getDoctorsInDept(deptId) {
+      // Filter local doctors list to only show those in the current dept
+      return this.doctors.filter((d) => d.department_id === deptId)
+    },
+
+    async handleDepartmentSubmit() {
+      let result
+      if (this.deptModalMode === 'create') {
+        result = await this.apiRequest('/add_dept', 'POST', this.departmentForm)
+      } else {
+        result = await this.apiRequest(
+          `/admin/department/edit/${this.departmentForm.department_id}`,
+          'PUT',
+          this.departmentForm,
+        )
+      }
+
+      if (result) {
+        alert(result.message)
+        this.hideActiveModal()
+        this.fetchDepartments()
+      }
+    },
+
+    switchToDepartmentModal() {
+      this.hideActiveModal()
+      setTimeout(() => {
+        this.openDepartmentModal()
+      }, 300)
+    },
+
+    // --- DOCTOR LOGIC ---
     openCreateDoctorModal() {
       this.modalMode = 'create'
       this.editingDoctor = {
@@ -592,6 +801,7 @@ export default {
         date_of_birth: '',
         address: '',
         status: 'Active',
+        department_id: '',
       }
       this.showModal('doctorModal')
     },
@@ -600,16 +810,17 @@ export default {
       this.editingDoctor = {
         ...doctor,
         qualification: doctor.qualification || doctor.qualifications || doctor.specialization || '',
+        department_id: doctor.department_id || '',
         password: '',
       }
       this.showModal('doctorModal')
     },
-    openEditPatientModal(patient) {
-      this.editingPatient = { ...patient }
-      this.showModal('patientModal')
-    },
-
     async handleDoctorSubmit() {
+      if (this.departments.length === 0) {
+        alert('Please create a Department first.')
+        return
+      }
+      // Password Validation
       if (
         this.modalMode === 'create' &&
         (!this.editingDoctor.password || this.editingDoctor.password.length < 8)
@@ -626,14 +837,6 @@ export default {
         return
       }
 
-      if (this.modalMode === 'edit') {
-        const index = this.doctors.findIndex((d) => d.user_id === this.editingDoctor.user_id)
-        if (index !== -1) {
-          const updatedDoctor = { ...this.doctors[index], ...this.editingDoctor }
-          this.doctors.splice(index, 1, updatedDoctor)
-        }
-      }
-
       this.hideActiveModal()
 
       try {
@@ -646,8 +849,8 @@ export default {
         } else {
           const payload = { ...this.editingDoctor }
           if (!payload.password) delete payload.password
-
           await this.apiRequest(`/admin/doctor/edit/${this.editingDoctor.user_id}`, 'PUT', payload)
+          await this.fetchDoctors()
         }
       } catch (e) {
         console.error(e)
@@ -655,25 +858,22 @@ export default {
       }
     },
 
+    // --- PATIENT LOGIC ---
+    openEditPatientModal(patient) {
+      this.editingPatient = { ...patient }
+      this.showModal('patientModal')
+    },
     async handlePatientSubmit() {
-      if (!this.editingPatient.user_id) return
-
-      const index = this.patients.findIndex((p) => p.user_id === this.editingPatient.user_id)
-      if (index !== -1) {
-        this.patients.splice(index, 1, { ...this.editingPatient })
-      }
-
       this.hideActiveModal()
-
       try {
         await this.apiRequest(
           `/admin/patient/edit/${this.editingPatient.user_id}`,
           'PUT',
           this.editingPatient,
         )
+        await this.fetchPatients()
       } catch (e) {
         console.error(e)
-        this.fetchPatients()
       }
     },
 
@@ -700,22 +900,15 @@ export default {
 
     async blacklistUser(user, role) {
       if (!confirm(`Are you sure you want to blacklist this ${role.toLowerCase()}?`)) return
-
-      const prevStatus = user.status
       user.status = 'Inactive'
-
       const endpoint =
         role === 'Doctor'
           ? `/admin/doctor/blacklist/${user.user_id}`
           : `/admin/patient/blacklist/${user.user_id}`
-
       const result = await this.apiRequest(endpoint, 'POST')
-
       if (result) {
         alert(result.message || `${role} blacklisted successfully!`)
         await this.fetchAllData()
-      } else {
-        user.status = prevStatus
       }
     },
 
@@ -739,27 +932,18 @@ export default {
   background-color: #f8f9fa;
   min-height: 100vh;
 }
-
 .welcome-banner {
   background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
 }
-
 .card {
   transition: box-shadow 0.2s ease-in-out;
 }
-
-.card-header h4 {
-  font-weight: 600;
-}
-
 .list-group-item {
   transition: background-color 0.2s ease-in-out;
 }
-
 .list-group-item:hover {
   background-color: #f1f3f5;
 }
-
 .modal-header {
   border-bottom: none;
 }
